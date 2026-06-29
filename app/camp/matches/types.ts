@@ -14,10 +14,27 @@ export type Team = {
     teamBId: number;
   };
   
+  export type ManualMatch = {
+    id: number;
+    roundNumber: number;
+    courtNumber: number;
+    teamAId: number;
+    teamBId: number;
+  };
+  
+  export type Round = {
+    roundNumber: number;
+    matches: Match[];
+  };
+  
+  export type SetScore = {
+    teamA: number;
+    teamB: number;
+  };
+  
   export type MatchResult = {
     matchId: string;
-    scoreA: number;
-    scoreB: number;
+    sets: SetScore[];
     finished: boolean;
   };
   
@@ -29,4 +46,4 @@ export type Team = {
     matchMinutes: number;
     breakMinutes: number;
   };
-
+  

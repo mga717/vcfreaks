@@ -15,10 +15,10 @@ export default function ScoreInput({ game, teams, inputs, onChange }: Props) {
     newValues: Partial<TeamScoreInput>
   ) => {
     onChange(teamId, {
-      teamId,
-      ...inputs[teamId],
-      ...newValues,
-    });
+        ...inputs[teamId],
+        ...newValues,
+        teamId,
+      });
   };
 
   return (

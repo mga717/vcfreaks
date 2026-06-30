@@ -86,11 +86,12 @@ const [savedMessage, setSavedMessage] = useState("");
             <label className="mt-4 block">
               <span className="font-bold text-slate-900">メモ</span>
               <textarea
-              value = {memo}
-              onChange ={(e)=> setMemo(endTime.target.value)}
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
-                placeholder="例：動ける服装で来てください"
-              />
+  value={memo}
+  onChange={(e) => setMemo(e.target.value)}
+  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
+  placeholder="例：動ける服装で来てください"
+/>
+
             </label>
   
             <button

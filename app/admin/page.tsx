@@ -57,7 +57,7 @@ export default function AdminPage() {
           </a>
 
           <a
-            href="/admin/schedule"
+            href="/admin/schedule/new"
             className="block rounded-3xl bg-white p-5 shadow"
           >
             <p className="text-sm font-bold text-yellow-600">
@@ -68,17 +68,7 @@ export default function AdminPage() {
             </h2>
           </a>
 
-          <a
-            href="/admin/members"
-            className="block rounded-3xl bg-white p-5 shadow"
-          >
-            <p className="text-sm font-bold text-yellow-600">
-             members
-            </p>
-            <h2 className="mt-2 text-xl font-bold text-slate-900">
-              参加者を管理する
-            </h2>
-          </a>
+          
 
 
         </div>

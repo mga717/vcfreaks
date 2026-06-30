@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,6 +16,15 @@ type Schedule = {
   };
   
   export default function SchedulePage() {
+    const deleteSchedule = (id: number) => {
+        const updatedSchedules = schedules.filter((schedule) => schedule.id !== id);
+      
+        localStorage.setItem("schedules", JSON.stringify(updatedSchedules));
+      
+        setSchedules(updatedSchedules);
+      };
+
+
     const [schedules, setSchedules] = useState<Schedule[]>([]);
   
     useEffect(() => {
@@ -58,6 +68,33 @@ type Schedule = {
                   <p className="mt-3 font-semibold text-slate-900">
                     👥 参加予定 {schedule.participants}人
                   </p>
+                  <button
+  onClick={() => deleteSchedule(schedule.id)}
+  className="mt-4 w-full rounded-2xl bg-red-500 py-2 font-bold text-white"
+>
+  削除する
+</button>
+
+<a
+  href={`/admin/schedule/edit/${schedule.id}`}
+  className="mt-3 block w-full rounded-2xl bg-slate-800 py-2 text-center font-bold text-white"
+>
+  編集する
+</a>
+
+<a
+  href={`/schedule/${schedule.id}`}
+  className="mt-3 block w-full rounded-2xl bg-blue-600 py-2 text-center font-bold text-white"
+>
+  詳細を見る
+</a>
+
+
+
+
+
+
+
                 </div>
               ))
             )}
@@ -67,4 +104,4 @@ type Schedule = {
     );
   }
 
-  
+ 

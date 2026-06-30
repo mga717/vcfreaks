@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import BottomNav from "../../components/BottomNav";
 
 type Schedule = {
   id: number;
@@ -12,7 +13,8 @@ type Schedule = {
   place: string;
   station: string;
   memo: string;
-  participants: string[];
+  participants: string[] | number;
+  allowParticipation?: boolean;
 };
 
 export default function ScheduleDetailPage() {
@@ -38,20 +40,12 @@ export default function ScheduleDetailPage() {
         participants: Array.isArray(foundSchedule.participants)
           ? foundSchedule.participants
           : [],
+        allowParticipation: foundSchedule.allowParticipation ?? true,
       });
     }
   }, [id]);
 
-  const joinSchedule = () => {
-    if (!schedule || !userName) return;
-
-    if (schedule.participants.includes(userName)) return;
-
-    const updatedSchedule = {
-      ...schedule,
-      participants: [...schedule.participants, userName],
-    };
-
+  const saveUpdatedSchedule = (updatedSchedule: Schedule) => {
     const schedules: Schedule[] = JSON.parse(
       localStorage.getItem("schedules") || "[]"
     );
@@ -62,42 +56,61 @@ export default function ScheduleDetailPage() {
 
     localStorage.setItem("schedules", JSON.stringify(updatedSchedules));
     setSchedule(updatedSchedule);
+  };
+
+  const joinSchedule = () => {
+    if (!schedule) return;
+
+    if (!userName) {
+      window.location.href = "/mypage";
+      return;
+    }
+
+    const participants = Array.isArray(schedule.participants)
+      ? schedule.participants
+      : [];
+
+    if (participants.includes(userName)) return;
+
+    saveUpdatedSchedule({
+      ...schedule,
+      participants: [...participants, userName],
+    });
   };
 
   const leaveSchedule = () => {
     if (!schedule || !userName) return;
 
-    const updatedSchedule = {
+    const participants = Array.isArray(schedule.participants)
+      ? schedule.participants
+      : [];
+
+    saveUpdatedSchedule({
       ...schedule,
-      participants: schedule.participants.filter((name) => name !== userName),
-    };
-
-    const schedules: Schedule[] = JSON.parse(
-      localStorage.getItem("schedules") || "[]"
-    );
-
-    const updatedSchedules = schedules.map((item) =>
-      item.id === id ? updatedSchedule : item
-    );
-
-    localStorage.setItem("schedules", JSON.stringify(updatedSchedules));
-    setSchedule(updatedSchedule);
+      participants: participants.filter((name) => name !== userName),
+    });
   };
 
   if (!schedule) {
     return (
-      <main className="min-h-screen bg-slate-100 px-4 py-6">
+      <main className="min-h-screen bg-slate-100 pb-24 px-4 py-6">
         <section className="mx-auto max-w-md">
           <p>予定が見つかりません。</p>
         </section>
+
+        <BottomNav />
       </main>
     );
   }
 
-  const isJoined = schedule.participants.includes(userName);
+  const participants = Array.isArray(schedule.participants)
+    ? schedule.participants
+    : [];
+
+  const isJoined = userName ? participants.includes(userName) : false;
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-6">
+    <main className="min-h-screen bg-slate-100 pb-24 px-4 py-6">
       <section className="mx-auto max-w-md">
         <a href="/schedule" className="font-bold text-blue-600">
           ← 予定一覧へ戻る
@@ -113,6 +126,7 @@ export default function ScheduleDetailPage() {
           <p className="mt-3 text-slate-700">
             {schedule.startTime}〜{schedule.endTime}
           </p>
+
           <p className="mt-3 text-slate-700">📍 {schedule.place}</p>
           <p className="mt-1 text-slate-700">🚉 {schedule.station}</p>
 
@@ -123,12 +137,16 @@ export default function ScheduleDetailPage() {
           )}
 
           <p className="mt-5 font-bold text-slate-900">
-            👥 参加予定 {schedule.participants.length}人
+            👥 参加予定 {participants.length}人
           </p>
 
-          {!userName ? (
+          {schedule.allowParticipation === false ? (
+            <p className="mt-5 rounded-2xl bg-slate-100 p-3 text-center font-bold text-slate-500">
+              この予定は参加登録なし
+            </p>
+          ) : !userName ? (
             <a
-              href="/profile"
+              href="/mypage"
               className="mt-5 block w-full rounded-2xl bg-slate-800 py-3 text-center font-bold text-white"
             >
               名前を登録して参加する
@@ -161,18 +179,21 @@ export default function ScheduleDetailPage() {
         <div className="mt-5 rounded-3xl bg-white p-5 shadow">
           <h2 className="text-xl font-bold text-slate-900">参加者一覧</h2>
 
-          {schedule.participants.length === 0 ? (
+          {participants.length === 0 ? (
             <p className="mt-3 text-slate-600">まだ参加者はいません。</p>
           ) : (
             <ul className="mt-3 space-y-2 text-slate-700">
-              {schedule.participants.map((name) => (
+              {participants.map((name) => (
                 <li key={name}>・{name}</li>
               ))}
             </ul>
           )}
         </div>
       </section>
+
+      <BottomNav />
     </main>
   );
 }
+
 

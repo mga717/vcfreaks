@@ -14,11 +14,11 @@ export default function AutumnCampPage() {
           </p>
 
           <h1 className="mt-2 text-3xl font-bold text-slate-900">
-            🍁 秋合宿
+            🍁 夏合宿
           </h1>
 
           <p className="mt-2 text-slate-700">
-            秋合宿のスケジュールや試合結果を確認できます。
+            夏合宿のスケジュールや試合結果を確認できます。
           </p>
         </div>
 

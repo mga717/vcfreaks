@@ -80,7 +80,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-slate-100 pb-24">
       <section className="mx-auto max-w-md px-4 py-6">
-        <div className="rounded-[32px] bg-lime-300 p-6 shadow">
+        <div className="rounded-[32px] bg-yellow-300 p-6 shadow">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold text-emerald-950">
               V.C.Freaks!!
@@ -127,6 +127,14 @@ export default function HomePage() {
             </a>
           </div>
         </div>
+
+
+
+
+
+
+
+
 
         <div className="mt-6 rounded-[32px] bg-white p-6 shadow">
           <h2 className="text-2xl font-bold text-emerald-950">

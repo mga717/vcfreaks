@@ -12,6 +12,7 @@ type Team = {
   id: number;
   name: string;
   color: string;
+  icon: string;
   members: number[];
 };
 

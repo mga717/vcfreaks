@@ -57,7 +57,7 @@ export default function AdminPage() {
           </a>
 
           <a
-            href="/admin/schedule/new"
+            href="/admin/schedule"
             className="block rounded-3xl bg-white p-5 shadow"
           >
             <p className="text-sm font-bold text-yellow-600">

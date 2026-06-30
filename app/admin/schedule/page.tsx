@@ -48,13 +48,24 @@ export default function SchedulePage() {
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6">
       <section className="mx-auto max-w-md">
-        <h1 className="text-3xl font-bold text-slate-900">
+        <a href="/admin" className="font-bold text-blue-600">
+          ← 管理者ホームへ戻る
+        </a>
+
+        <h1 className="mt-6 text-3xl font-bold text-slate-900">
           📅 管理者：予定一覧
         </h1>
 
         <p className="mt-1 text-slate-600">
-          予定の編集・削除を行います。
+          予定の追加・編集・削除を行います。
         </p>
+
+        <a
+          href="/admin/schedule/new"
+          className="mt-6 block w-full rounded-2xl bg-blue-600 py-3 text-center font-bold text-white"
+        >
+          ＋ 予定を追加する
+        </a>
 
         <div className="mt-6 space-y-4">
           {schedules.length === 0 ? (
@@ -81,13 +92,14 @@ export default function SchedulePage() {
                   {schedule.startTime}〜{schedule.endTime}
                 </p>
 
-                <p className="mt-2 text-slate-700">
-                  📍 {schedule.place}
-                </p>
+                <p className="mt-2 text-slate-700">📍 {schedule.place}</p>
+                <p className="mt-1 text-slate-700">🚉 {schedule.station}</p>
 
-                <p className="mt-1 text-slate-700">
-                  🚉 {schedule.station}
-                </p>
+                {schedule.memo && (
+                  <p className="mt-3 rounded-2xl bg-slate-100 p-3 text-slate-700">
+                    {schedule.memo}
+                  </p>
+                )}
 
                 <p className="mt-3 font-semibold text-slate-900">
                   👥 参加予定 {schedule.participants.length}人
@@ -105,16 +117,9 @@ export default function SchedulePage() {
                   )}
                 </p>
 
-                <button
-                  onClick={() => deleteSchedule(schedule.id)}
-                  className="mt-4 w-full rounded-2xl bg-red-500 py-3 font-bold text-white"
-                >
-                  削除する
-                </button>
-
                 <a
                   href={`/admin/schedule/edit/${schedule.id}`}
-                  className="mt-3 block w-full rounded-2xl bg-slate-800 py-3 text-center font-bold text-white"
+                  className="mt-4 block w-full rounded-2xl bg-slate-800 py-3 text-center font-bold text-white"
                 >
                   編集する
                 </a>
@@ -125,6 +130,14 @@ export default function SchedulePage() {
                 >
                   参加者画面で確認
                 </a>
+
+                <button
+                  type="button"
+                  onClick={() => deleteSchedule(schedule.id)}
+                  className="mt-3 w-full rounded-2xl bg-red-500 py-3 font-bold text-white"
+                >
+                  削除する
+                </button>
               </div>
             ))
           )}
@@ -133,3 +146,4 @@ export default function SchedulePage() {
     </main>
   );
 }
+

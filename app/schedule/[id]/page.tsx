@@ -3,18 +3,25 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import BottomNav from "../../components/BottomNav";
+import { supabase } from "../../../lib/supabase";
 
 type Schedule = {
   id: number;
   title: string;
   date: string;
-  startTime: string;
-  endTime: string;
+  start_time: string;
+  end_time: string;
   place: string;
   station: string;
   memo: string;
-  participants: string[] | number;
-  allowParticipation?: boolean;
+  allow_participation: boolean;
+};
+
+type Participant = {
+  id: number;
+  schedule_id: number;
+  user_name: string;
+  created_at?: string;
 };
 
 export default function ScheduleDetailPage() {
@@ -22,74 +29,105 @@ export default function ScheduleDetailPage() {
   const id = Number(params.id);
 
   const [schedule, setSchedule] = useState<Schedule | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const [userName, setUserName] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const savedName = localStorage.getItem("userName") || "";
     setUserName(savedName);
 
-    const schedules: Schedule[] = JSON.parse(
-      localStorage.getItem("schedules") || "[]"
-    );
+    fetchSchedule();
+    fetchParticipants();
+  }, []);
 
-    const foundSchedule = schedules.find((schedule) => schedule.id === id);
+  const fetchSchedule = async () => {
+    const { data, error } = await supabase
+      .from("schedules")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-    if (foundSchedule) {
-      setSchedule({
-        ...foundSchedule,
-        participants: Array.isArray(foundSchedule.participants)
-          ? foundSchedule.participants
-          : [],
-        allowParticipation: foundSchedule.allowParticipation ?? true,
-      });
+    setLoading(false);
+
+    if (error) {
+      console.error(error);
+      return;
     }
-  }, [id]);
 
-  const saveUpdatedSchedule = (updatedSchedule: Schedule) => {
-    const schedules: Schedule[] = JSON.parse(
-      localStorage.getItem("schedules") || "[]"
-    );
-
-    const updatedSchedules = schedules.map((item) =>
-      item.id === id ? updatedSchedule : item
-    );
-
-    localStorage.setItem("schedules", JSON.stringify(updatedSchedules));
-    setSchedule(updatedSchedule);
+    setSchedule(data);
   };
 
-  const joinSchedule = () => {
-    if (!schedule) return;
+  const fetchParticipants = async () => {
+    const { data, error } = await supabase
+      .from("schedule_participants")
+      .select("*")
+      .eq("schedule_id", id)
+      .order("created_at", { ascending: true });
 
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setParticipants(data || []);
+  };
+
+  const joinSchedule = async () => {
     if (!userName) {
       window.location.href = "/mypage";
       return;
     }
 
-    const participants = Array.isArray(schedule.participants)
-      ? schedule.participants
-      : [];
+    const alreadyJoined = participants.some(
+      (participant) => participant.user_name === userName
+    );
 
-    if (participants.includes(userName)) return;
+    if (alreadyJoined) return;
 
-    saveUpdatedSchedule({
-      ...schedule,
-      participants: [...participants, userName],
+    const { error } = await supabase.from("schedule_participants").insert({
+      schedule_id: id,
+      user_name: userName,
     });
+
+    if (error) {
+      console.error(error);
+      alert("参加登録に失敗しました。");
+      return;
+    }
+
+    fetchParticipants();
   };
 
-  const leaveSchedule = () => {
-    if (!schedule || !userName) return;
+  const leaveSchedule = async () => {
+    if (!userName) return;
 
-    const participants = Array.isArray(schedule.participants)
-      ? schedule.participants
-      : [];
+    const { error } = await supabase
+      .from("schedule_participants")
+      .delete()
+      .eq("schedule_id", id)
+      .eq("user_name", userName);
 
-    saveUpdatedSchedule({
-      ...schedule,
-      participants: participants.filter((name) => name !== userName),
-    });
+    if (error) {
+      console.error(error);
+      alert("参加取り消しに失敗しました。");
+      return;
+    }
+
+    fetchParticipants();
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-100 pb-24 px-4 py-6">
+        <section className="mx-auto max-w-md">
+          <p className="text-slate-600">読み込み中...</p>
+        </section>
+
+        <BottomNav />
+      </main>
+    );
+  }
 
   if (!schedule) {
     return (
@@ -103,11 +141,9 @@ export default function ScheduleDetailPage() {
     );
   }
 
-  const participants = Array.isArray(schedule.participants)
-    ? schedule.participants
-    : [];
-
-  const isJoined = userName ? participants.includes(userName) : false;
+  const isJoined = participants.some(
+    (participant) => participant.user_name === userName
+  );
 
   return (
     <main className="min-h-screen bg-slate-100 pb-24 px-4 py-6">
@@ -124,7 +160,7 @@ export default function ScheduleDetailPage() {
           </h1>
 
           <p className="mt-3 text-slate-700">
-            {schedule.startTime}〜{schedule.endTime}
+            {schedule.start_time}〜{schedule.end_time}
           </p>
 
           <p className="mt-3 text-slate-700">📍 {schedule.place}</p>
@@ -140,39 +176,41 @@ export default function ScheduleDetailPage() {
             👥 参加予定 {participants.length}人
           </p>
 
-          {schedule.allowParticipation === false ? (
+          {schedule.allow_participation ? (
+            !userName ? (
+              <a
+                href="/mypage"
+                className="mt-5 block w-full rounded-2xl bg-slate-800 py-3 text-center font-bold text-white"
+              >
+                名前を登録して参加する
+              </a>
+            ) : isJoined ? (
+              <div className="mt-5 space-y-3">
+                <p className="rounded-2xl bg-green-50 p-3 text-center font-bold text-green-700">
+                  ✓ 参加中
+                </p>
+
+                <button
+                  type="button"
+                  onClick={leaveSchedule}
+                  className="w-full rounded-2xl bg-red-500 py-3 font-bold text-white"
+                >
+                  参加を取り消す
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={joinSchedule}
+                className="mt-5 w-full rounded-2xl bg-green-600 py-3 font-bold text-white"
+              >
+                参加する
+              </button>
+            )
+          ) : (
             <p className="mt-5 rounded-2xl bg-slate-100 p-3 text-center font-bold text-slate-500">
               この予定は参加登録なし
             </p>
-          ) : !userName ? (
-            <a
-              href="/mypage"
-              className="mt-5 block w-full rounded-2xl bg-slate-800 py-3 text-center font-bold text-white"
-            >
-              名前を登録して参加する
-            </a>
-          ) : isJoined ? (
-            <div className="mt-5 space-y-3">
-              <p className="rounded-2xl bg-green-50 p-3 text-center font-bold text-green-700">
-                ✓ 参加中
-              </p>
-
-              <button
-                type="button"
-                onClick={leaveSchedule}
-                className="w-full rounded-2xl bg-red-500 py-3 font-bold text-white"
-              >
-                参加を取り消す
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={joinSchedule}
-              className="mt-5 w-full rounded-2xl bg-green-600 py-3 font-bold text-white"
-            >
-              参加する
-            </button>
           )}
         </div>
 
@@ -183,8 +221,8 @@ export default function ScheduleDetailPage() {
             <p className="mt-3 text-slate-600">まだ参加者はいません。</p>
           ) : (
             <ul className="mt-3 space-y-2 text-slate-700">
-              {participants.map((name) => (
-                <li key={name}>・{name}</li>
+              {participants.map((participant) => (
+                <li key={participant.id}>・{participant.user_name}</li>
               ))}
             </ul>
           )}
@@ -195,5 +233,4 @@ export default function ScheduleDetailPage() {
     </main>
   );
 }
-
 

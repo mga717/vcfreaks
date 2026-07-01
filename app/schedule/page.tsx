@@ -1,82 +1,42 @@
 "use client";
 
-import BottomNav from "../components/BottomNav";
 import { useEffect, useState } from "react";
+import BottomNav from "../components/BottomNav";
+import { supabase } from "../../lib/supabase";
 
 type Schedule = {
   id: number;
   title: string;
   date: string;
-  startTime: string;
-  endTime: string;
+  start_time: string;
+  end_time: string;
   place: string;
   station: string;
   memo: string;
-  participants: string[] | number;
-  allowParticipation?: boolean;
+  allow_participation: boolean;
 };
 
 export default function SchedulePage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [userName, setUserName] = useState("");
 
   useEffect(() => {
-    const savedName = localStorage.getItem("userName") || "";
-    setUserName(savedName);
-
-    const savedSchedules: Schedule[] = JSON.parse(
-      localStorage.getItem("schedules") || "[]"
-    );
-
-    const fixedSchedules = savedSchedules.map((schedule) => ({
-      ...schedule,
-      participants: Array.isArray(schedule.participants)
-        ? schedule.participants
-        : [],
-      allowParticipation: schedule.allowParticipation ?? true,
-    }));
-
-    setSchedules(fixedSchedules);
+    fetchSchedules();
   }, []);
 
-  const updateSchedule = (updatedSchedule: Schedule) => {
-    const updatedSchedules = schedules.map((schedule) =>
-      schedule.id === updatedSchedule.id ? updatedSchedule : schedule
-    );
+  const fetchSchedules = async () => {
+    const { data, error } = await supabase
+      .from("schedules")
+      .select("*")
+      .order("date", { ascending: true })
+      .order("start_time", { ascending: true });
 
-    localStorage.setItem("schedules", JSON.stringify(updatedSchedules));
-    setSchedules(updatedSchedules);
-  };
-
-  const joinSchedule = (schedule: Schedule) => {
-    if (!userName) {
-      window.location.href = "/mypage";
+    if (error) {
+      console.error(error);
+      alert("予定の取得に失敗しました。");
       return;
     }
 
-    const participants = Array.isArray(schedule.participants)
-      ? schedule.participants
-      : [];
-
-    if (participants.includes(userName)) return;
-
-    updateSchedule({
-      ...schedule,
-      participants: [...participants, userName],
-    });
-  };
-
-  const leaveSchedule = (schedule: Schedule) => {
-    if (!userName) return;
-
-    const participants = Array.isArray(schedule.participants)
-      ? schedule.participants
-      : [];
-
-    updateSchedule({
-      ...schedule,
-      participants: participants.filter((name) => name !== userName),
-    });
+    setSchedules(data || []);
   };
 
   return (
@@ -93,70 +53,46 @@ export default function SchedulePage() {
               </p>
             </div>
           ) : (
-            schedules.map((schedule) => {
-              const participants = Array.isArray(schedule.participants)
-                ? schedule.participants
-                : [];
+            schedules.map((schedule) => (
+              <div key={schedule.id} className="rounded-3xl bg-white p-5 shadow">
+                <p className="text-sm font-bold text-blue-600">
+                  {schedule.title}
+                </p>
 
-              const isJoined = userName
-                ? participants.includes(userName)
-                : false;
+                <h2 className="mt-2 text-xl font-bold text-slate-900">
+                  {schedule.date}
+                </h2>
 
-              return (
-                <div
-                  key={schedule.id}
-                  className="rounded-3xl bg-white p-5 shadow"
-                >
-                  <p className="text-sm font-bold text-blue-600">
-                    {schedule.title}
+                <p className="mt-2 text-slate-700">
+                  {schedule.start_time}〜{schedule.end_time}
+                </p>
+
+                <p className="mt-2 text-slate-700">📍 {schedule.place}</p>
+                <p className="mt-1 text-slate-700">🚉 {schedule.station}</p>
+
+                {schedule.memo && (
+                  <p className="mt-3 rounded-2xl bg-slate-100 p-3 text-slate-700">
+                    {schedule.memo}
                   </p>
+                )}
 
-                  <h2 className="mt-2 text-xl font-bold text-slate-900">
-                    {schedule.date}
-                  </h2>
-
-                  <p className="mt-2 text-slate-700">
-                    {schedule.startTime}〜{schedule.endTime}
-                  </p>
-
-                  <p className="mt-2 text-slate-700">📍 {schedule.place}</p>
-                  <p className="mt-1 text-slate-700">🚉 {schedule.station}</p>
-
-                  <p className="mt-3 font-semibold text-slate-900">
-                    👥 参加予定 {participants.length}人
-                  </p>
-
-                  {schedule.allowParticipation === false ? (
-                    <p className="mt-4 rounded-2xl bg-slate-100 p-3 text-center font-bold text-slate-500">
-                      この予定は参加登録なし
-                    </p>
-                  ) : isJoined ? (
-                    <button
-                      type="button"
-                      onClick={() => leaveSchedule(schedule)}
-                      className="mt-4 w-full rounded-2xl bg-red-500 py-3 font-bold text-white"
-                    >
-                      参加を取り消す
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => joinSchedule(schedule)}
-                      className="mt-4 w-full rounded-2xl bg-green-600 py-3 font-bold text-white"
-                    >
-                      参加する
-                    </button>
-                  )}
-
+                {schedule.allow_participation ? (
                   <a
                     href={`/schedule/${schedule.id}`}
-                    className="mt-3 block w-full rounded-2xl bg-blue-600 py-2 text-center font-bold text-white"
+                    className="mt-4 block w-full rounded-2xl bg-green-600 py-3 text-center font-bold text-white"
+                  >
+                    参加・詳細を見る
+                  </a>
+                ) : (
+                  <a
+                    href={`/schedule/${schedule.id}`}
+                    className="mt-4 block w-full rounded-2xl bg-blue-600 py-3 text-center font-bold text-white"
                   >
                     詳細を見る
                   </a>
-                </div>
-              );
-            })
+                )}
+              </div>
+            ))
           )}
         </div>
       </section>

@@ -1,48 +1,55 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { supabase } from "../../../lib/supabase";
 
 type Schedule = {
   id: number;
   title: string;
   date: string;
-  startTime: string;
-  endTime: string;
+  start_time: string;
+  end_time: string;
   place: string;
   station: string;
   memo: string;
-  participants: string[];
-  allowParticipation?: boolean;
+  allow_participation: boolean;
 };
 
 export default function SchedulePage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
 
   useEffect(() => {
-    const savedSchedules: Schedule[] = JSON.parse(
-      localStorage.getItem("schedules") || "[]"
-    );
-
-    const fixedSchedules = savedSchedules.map((schedule) => ({
-      ...schedule,
-      participants: Array.isArray(schedule.participants)
-        ? schedule.participants
-        : [],
-      allowParticipation: schedule.allowParticipation ?? true,
-    }));
-
-    setSchedules(fixedSchedules);
+    fetchSchedules();
   }, []);
 
-  const deleteSchedule = (id: number) => {
+  const fetchSchedules = async () => {
+    const { data, error } = await supabase
+      .from("schedules")
+      .select("*")
+      .order("date", { ascending: true })
+      .order("start_time", { ascending: true });
+
+    if (error) {
+      console.error(error);
+      alert("予定の取得に失敗しました。");
+      return;
+    }
+
+    setSchedules(data || []);
+  };
+
+  const deleteSchedule = async (id: number) => {
     if (!confirm("この予定を削除しますか？")) return;
 
-    const updatedSchedules = schedules.filter(
-      (schedule) => schedule.id !== id
-    );
+    const { error } = await supabase.from("schedules").delete().eq("id", id);
 
-    localStorage.setItem("schedules", JSON.stringify(updatedSchedules));
-    setSchedules(updatedSchedules);
+    if (error) {
+      console.error(error);
+      alert("削除に失敗しました。");
+      return;
+    }
+
+    fetchSchedules();
   };
 
   return (
@@ -56,13 +63,9 @@ export default function SchedulePage() {
           📅 管理者：予定一覧
         </h1>
 
-        <p className="mt-1 text-slate-600">
-          予定の追加・編集・削除を行います。
-        </p>
-
         <a
           href="/admin/schedule/new"
-          className="mt-6 block w-full rounded-2xl bg-blue-600 py-3 text-center font-bold text-white"
+          className="mt-6 block rounded-2xl bg-blue-600 py-3 text-center font-bold text-white"
         >
           ＋ 予定を追加する
         </a>
@@ -70,16 +73,11 @@ export default function SchedulePage() {
         <div className="mt-6 space-y-4">
           {schedules.length === 0 ? (
             <div className="rounded-3xl bg-white p-5 shadow">
-              <p className="text-slate-600">
-                まだ予定が登録されていません。
-              </p>
+              <p className="text-slate-600">まだ予定がありません。</p>
             </div>
           ) : (
             schedules.map((schedule) => (
-              <div
-                key={schedule.id}
-                className="rounded-3xl bg-white p-5 shadow"
-              >
+              <div key={schedule.id} className="rounded-3xl bg-white p-5 shadow">
                 <p className="text-sm font-bold text-blue-600">
                   {schedule.title}
                 </p>
@@ -89,55 +87,33 @@ export default function SchedulePage() {
                 </h2>
 
                 <p className="mt-2 text-slate-700">
-                  {schedule.startTime}〜{schedule.endTime}
+                  {schedule.start_time}〜{schedule.end_time}
                 </p>
 
                 <p className="mt-2 text-slate-700">📍 {schedule.place}</p>
                 <p className="mt-1 text-slate-700">🚉 {schedule.station}</p>
 
-                {schedule.memo && (
-                  <p className="mt-3 rounded-2xl bg-slate-100 p-3 text-slate-700">
-                    {schedule.memo}
-                  </p>
-                )}
-
-                <p className="mt-3 font-semibold text-slate-900">
-                  👥 参加予定 {schedule.participants.length}人
-                </p>
-
                 <p className="mt-2 text-sm">
-                  {schedule.allowParticipation ? (
-                    <span className="font-bold text-green-600">
-                      ✅ 参加受付中
-                    </span>
+                  {schedule.allow_participation ? (
+                    <span className="font-bold text-green-600">✅ 参加受付中</span>
                   ) : (
-                    <span className="font-bold text-slate-500">
-                      参加登録なし
-                    </span>
+                    <span className="font-bold text-slate-500">参加登録なし</span>
                   )}
                 </p>
 
-                <a
-                  href={`/admin/schedule/edit/${schedule.id}`}
-                  className="mt-4 block w-full rounded-2xl bg-slate-800 py-3 text-center font-bold text-white"
-                >
-                  編集する
-                </a>
-
-                <a
-                  href={`/schedule/${schedule.id}`}
-                  className="mt-3 block w-full rounded-2xl bg-blue-600 py-3 text-center font-bold text-white"
-                >
-                  参加者画面で確認
-                </a>
-
                 <button
-                  type="button"
                   onClick={() => deleteSchedule(schedule.id)}
-                  className="mt-3 w-full rounded-2xl bg-red-500 py-3 font-bold text-white"
+                  className="mt-4 w-full rounded-2xl bg-red-500 py-3 font-bold text-white"
                 >
                   削除する
                 </button>
+
+                <a
+                  href={`/schedule/${schedule.id}`}
+                  className="mt-3 block rounded-2xl bg-blue-600 py-3 text-center font-bold text-white"
+                >
+                  参加者画面で確認
+                </a>
               </div>
             ))
           )}
@@ -146,4 +122,3 @@ export default function SchedulePage() {
     </main>
   );
 }
-

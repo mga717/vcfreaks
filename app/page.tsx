@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import BottomNav from "./components/BottomNav";
+import { supabase } from "../lib/supabase";
 
 type Schedule = {
   id: number;
@@ -17,8 +18,8 @@ type Notice = {
   id: number;
   title: string;
   text: string;
-  deadline?: string;
-  pinned?: boolean;
+  deadline: string | null;
+  pinned: boolean;
 };
 
 export default function HomePage() {
@@ -26,12 +27,32 @@ export default function HomePage() {
   const [notices, setNotices] = useState<Notice[]>([]);
 
   useEffect(() => {
+    fetchNotices();
+    fetchSchedules();
+  }, []);
+
+  const fetchNotices = async () => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const { data, error } = await supabase
+      .from("notices")
+      .select("*")
+      .or(`deadline.is.null,deadline.gte.${today}`)
+      .order("pinned", { ascending: false })
+      .order("deadline", { ascending: true })
+      .order("id", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setNotices(data || []);
+  };
+
+  const fetchSchedules = () => {
     const savedSchedules: Schedule[] = JSON.parse(
       localStorage.getItem("schedules") || "[]"
-    );
-
-    const savedNotices: Notice[] = JSON.parse(
-      localStorage.getItem("notices") || "[]"
     );
 
     const today = new Date();
@@ -50,39 +71,15 @@ export default function HomePage() {
       })
       .slice(0, 2);
 
-    const activeNotices = savedNotices
-      .filter((notice) => {
-        if (!notice.deadline) return true;
-
-        const deadlineDate = new Date(notice.deadline);
-        deadlineDate.setHours(23, 59, 59, 999);
-
-        return deadlineDate >= today;
-      })
-      .sort((a, b) => {
-        if (a.pinned && !b.pinned) return -1;
-        if (!a.pinned && b.pinned) return 1;
-
-        if (a.deadline && b.deadline) {
-          return (
-            new Date(a.deadline).getTime() -
-            new Date(b.deadline).getTime()
-          );
-        }
-
-        return b.id - a.id;
-      });
-
     setNextSchedules(upcoming);
-    setNotices(activeNotices);
-  }, []);
+  };
 
   return (
     <main className="min-h-screen bg-slate-100 pb-24">
       <section className="mx-auto max-w-md px-4 py-6">
         <div className="rounded-[32px] bg-yellow-300 p-6 shadow">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-emerald-950">
+            <h1 className="text-3xl font-bold text-slate-900">
               V.C.Freaks!!
             </h1>
 
@@ -91,7 +88,7 @@ export default function HomePage() {
             </button>
           </div>
 
-          <p className="mt-2 text-sm font-bold text-emerald-900">
+          <p className="mt-2 text-sm font-bold text-slate-700">
             Circle App
           </p>
 
@@ -100,8 +97,8 @@ export default function HomePage() {
               href="/schedule"
               className="block rounded-3xl border border-white/70 bg-white/50 p-5 text-center"
             >
-              <p className="text-sm font-bold text-emerald-500">SCHEDULE</p>
-              <h2 className="mt-2 text-xl font-bold text-emerald-950">
+              <p className="text-sm font-bold text-emerald-600">SCHEDULE</p>
+              <h2 className="mt-2 text-xl font-bold text-slate-900">
                 今日の予定を見る
               </h2>
             </a>
@@ -111,7 +108,7 @@ export default function HomePage() {
               className="block rounded-3xl border border-white/70 bg-white/50 p-5 text-center"
             >
               <p className="text-sm font-bold text-orange-500">CAMP</p>
-              <h2 className="mt-2 text-xl font-bold text-emerald-950">
+              <h2 className="mt-2 text-xl font-bold text-slate-900">
                 合宿ページ
               </h2>
             </a>
@@ -121,23 +118,15 @@ export default function HomePage() {
               className="block rounded-3xl border border-white/70 bg-white/50 p-5 text-center"
             >
               <p className="text-sm font-bold text-purple-500">MOVIE</p>
-              <h2 className="mt-2 text-xl font-bold text-emerald-950">
+              <h2 className="mt-2 text-xl font-bold text-slate-900">
                 サークル動画
               </h2>
             </a>
           </div>
         </div>
 
-
-
-
-
-
-
-
-
         <div className="mt-6 rounded-[32px] bg-white p-6 shadow">
-          <h2 className="text-2xl font-bold text-emerald-950">
+          <h2 className="text-2xl font-bold text-slate-900">
             📢 お知らせ
           </h2>
 
@@ -178,7 +167,7 @@ export default function HomePage() {
         </div>
 
         <div className="mt-6 rounded-[32px] bg-white p-6 shadow">
-          <h2 className="text-2xl font-bold text-emerald-950">
+          <h2 className="text-2xl font-bold text-slate-900">
             📅 次の予定
           </h2>
 
@@ -220,7 +209,7 @@ export default function HomePage() {
         </div>
 
         <div className="mt-6 rounded-[32px] bg-white p-6 shadow">
-          <h2 className="text-3xl font-bold text-emerald-950">Movie</h2>
+          <h2 className="text-3xl font-bold text-slate-900">Movie</h2>
           <p className="mt-3 text-slate-600">
             サークルメンバーで作成した動画をここに表示します。
           </p>
